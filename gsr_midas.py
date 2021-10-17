@@ -55,6 +55,17 @@ class size():
             self.value = round(s*(10**3), 1)
             self.unit = "Megabytes"
 
+def getuuids():
+    with open("uuid.json", "r") as jf:
+        d = json.load(jf)
+        return d.values()
+
+def update_uuid(zeppelin):
+    with open("uuid.json", "r+") as jf:
+        d = json.load(jf)
+        d[zeppelin.sample] = zeppelin.uuid
+        jf.seek(0)
+        json.dump(d, jf, indent=4)
 
 class tempZeppelin(): # class to define a temporary Zeppelin
     def __init__(self, url):
@@ -62,7 +73,7 @@ class tempZeppelin(): # class to define a temporary Zeppelin
         self.name = getname(url) # get name of sample
         ch = requests.get(url+".sha256", stream = True) # get checksum from url
         self.checksum = ch.text
-        print("Sending request\n")
+        print("Sending request")
         r = requests.get(url, stream=True)
         content_length = int(r.headers['Content-Length'])
         s = size(content_length)
@@ -74,7 +85,7 @@ class tempZeppelin(): # class to define a temporary Zeppelin
                     f.write(chunk) # write content to tempfile
                     bar()
             f.seek(0)
-            print(f"Verifying checksum\n")
+            print(f"Verifying checksum")
             b = f.read()
             _sha = hashlib.sha256(b).hexdigest() # get hash from zip
             assert self.checksum == _sha # make sure both hashes match
@@ -83,34 +94,33 @@ class tempZeppelin(): # class to define a temporary Zeppelin
             folder = f"{tempfile.gettempdir()}/{self.name}_unzip" # path of dir where extract
             print(f"Extracting zip file\n")
             t.extractall(path = folder) # extract content into /unzip
-            print(f"Done\n")
+            print(f"Done")
         os.close(self.i) # close tmp
         os.remove(self.path) # remove zip file
         self.path = folder # establish path as path of dir of files
         self.Zeppelin = Zeppelin(self.path) # create a Zeppelin object from the dir
+        current_uuids = getuuids() # make sure no repeated uuids are allowed
+        while self.Zeppelin in current_uuids:
+            self.Zeppelin = Zeppelin(self.path)
+    
+        
+    def load(self, cordra, max=None):
+        try:
+            update_uuid(self.Zeppelin)
+            self.Zeppelin.upload_all(cordra, max)
+        except BaseException as e:
+            print(e)
+        finally:
+            del self
 
-def update_uuid(zeppelin):
-    with open("uuid.json", "r+") as jf:
-        d = json.load(jf)
-        d[zeppelin.sample] = zeppelin.uuid
-        jf.seek(0)
-        json.dump(d, jf, indent=4)
-
-def zload(cordra, url, max=None):
-    z = tempZeppelin(url)
-    try:
-        z.Zeppelin.upload_all(cordra, max)
-        update_uuid(z.Zeppelin)
-    except BaseException as e:
-        print(e)
-    finally:
-        shutil.rmtree(z.path)
+    def __del__(self):
+        shutil.rmtree(self.path)
+            
 
 def z_all(max=None):
     for url in download_urls:
-        zload(cs, url, max)
+        tempZeppelin(url).load(cs, max)
 
-z_all(10)
 
 
 

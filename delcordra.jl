@@ -23,5 +23,5 @@ r = find_object(cc, "/CamiloExplore:1"; ids = true, pageSize = -1)
     end
 end
 
-@JSON read_object(cc, "test/gsr-2019-40c6/mllsq_generic_gsr")
+#@JSON read_object(cc, "test/gsr-2019-40c6/mllsq_generic_gsr")
 

@@ -7,12 +7,14 @@ local = input("Local?(y/n) ")
 if local == 'y':
     host = 'https://localhost:8443'
     username = 'admin'
+    password = getpass.getpass()
+    token = cordra.Token.create(host, username, password, verify = False)
 else:
-    host = "https://sandbox.materialhub.org"
-    username="camilovelezr"
+    host = input("Cordra's host: ")
+    username = input("Username: ")
+    password = getpass.getpass()
+    token = cordra.Token.create(host, username, password, verify = False)
 
-password = getpass.getpass()
-token = cordra.Token.create(host, username, password, verify = False)
 
 r = cordra.CordraObject.find(host, '/CamiloExplore:1', ids = True, token = token, verify = False, full = True)
 ids = r["results"]
